@@ -6,8 +6,11 @@ $(document).ready(function(){
       $.each($(this).serializeArray(), function(i, field){
          values[field.name] = field.value;
       });
-
-      getData(values);
+      if (values) {
+         searchData(values);
+      } else {
+         getData();
+      }
    });
 
    $("#addSomeone").submit(addSomeone);
@@ -15,6 +18,19 @@ $(document).ready(function(){
 
    getData();
 });
+
+
+function searchData(values){
+   $.ajax({
+      type: "GET",
+      url: "/find",
+      data: values,
+      success: function(data){
+         updateDOM(data);
+      }
+   })
+}
+
 
 function getData(values){
    $.ajax({
@@ -34,6 +50,7 @@ function addSomeone(){
    $.each($(this).serializeArray(), function(i, field){
       values[field.name] = field.value;
    });
+   console.log(values);
 
    $.ajax({
       type: "POST",
@@ -68,8 +85,11 @@ function updateDOM(data){
       var el = "<div class='well col-md-3'>" +
                   "<p>" + data[i].name + "</p>" +
                   "<p>" + data[i].location + "</p>" +
+                  "<p>" + data[i].address + "</p>" +
+                   "<p>" + data[i].age + "</p>" +
+                  "<p>" + data[i].spirit_animal + "</p>" +
                   "<button class='delete btn btn-danger' data-id='" +
-                     data[i]._id + "'>Delete</button>" +
+                     data[i].id + "'>Delete</button>" +
                "</div>";
 
       $("#peopleContainer").append(el);

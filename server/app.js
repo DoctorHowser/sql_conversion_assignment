@@ -16,7 +16,7 @@ app.get('/data', function(req,res){
 
     //SQL Query > SELECT data from table
     pg.connect(connectionString, function (err, client, done) {
-        var query = client.query("SELECT id, name, location FROM people ORDER BY name ASC");
+        var query = client.query("SELECT id, name, location, address, spirit_animal, age FROM people ORDER BY name ASC");
 
         // Stream results back one row at a time, push into results array
         query.on('row', function (row) {
@@ -42,7 +42,10 @@ app.post('/data', function(req,res){
 
     var addedPerson = {
         "name" : req.body.peopleAdd,
-        "location" : req.body.locationAdd
+        "location" : req.body.locationAdd,
+        "age" : req.body.ageAdd,
+        "address" : req.body.addressAdd,
+        "spirit" : req.body.spiritAdd
     };
 
     pg.connect(connectionString, function (err, client) {
@@ -54,7 +57,7 @@ app.post('/data', function(req,res){
         //console.log(query);
         //client.query(query);
 
-        client.query("INSERT INTO people (name, location) VALUES ($1, $2) RETURNING id", [addedPerson.name, addedPerson.location],
+        client.query("INSERT INTO people (name, location, age, address, spirit_animal) VALUES ($1, $2, $3, $4, $5) RETURNING id", [addedPerson.name, addedPerson.location, addedPerson.age, addedPerson.address, addedPerson.spirit],
             function(err, result) {
                 if(err) {
                     console.log("Error inserting data: ", err);
@@ -68,16 +71,55 @@ app.post('/data', function(req,res){
 
 });
 
-app.delete('/data', function(req,res){
+app.delete('/data', function(req,res) {
     console.log(req.body.id);
-
-    Person.findByIdAndRemove({"_id" : req.body.id}, function(err, data){
-        if(err) console.log(err);
-        res.send(data);
+    pg.connect(connectionString, function (err, client) {
+        client.query("DELETE FROM people WHERE id = ($1)", [req.body.id],
+            function (err, result) {
+                if (err) {
+                    console.log("Error deleting data: ", err);
+                    res.send(false);
+                }
+                res.send(true);
+            });
     });
-
-
 });
+
+app.get('/find', function(req, res){
+    var results = [];
+    pg.connect(connectionString, function (err, client) {
+        var query = client.query("SELECT * FROM people WHERE name LIKE ($1)", ['%'+ req.query.peopleSearch + '%']);
+
+        query.on('row', function (row){
+                results.push(row);
+            });
+        query.on('end', function () {
+            client.end();
+            return res.json(results);
+        });
+
+        // Handle Errors
+        if (err) {
+            console.log(err);
+        }
+
+            //function (err, result) {
+            //    //console.log(result);
+            //    if (err) {
+            //        console.log("Error searching data: ", err);
+            //        res.send(false);
+            //    }
+            //    console.log(result.rows);
+            //    res.send(result);
+    });
+});
+    //Person.findByIdAndRemove({"_id" : req.body.id}, function(err, data){
+    //    if(err) console.log(err);
+    //    res.send(data);
+    //});
+
+
+
 
 app.get("/*", function(req,res){
     var file = req.params[0] || "/views/index.html";
